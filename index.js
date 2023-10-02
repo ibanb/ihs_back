@@ -5,6 +5,21 @@ import config from 'config';
 import {router as authRouter} from './routes/auth.routes.js';
 import fileRouter from './routes/file.routes.js';
 import { cors } from './middleware/cors.middleware.js';
+// implements nodejs wrappers for HTMLCanvasElement, HTMLImageElement, ImageData
+import * as nodeCanvas from 'canvas';
+// import '@tensorflow/tfjs-node';
+import * as faceapi from 'face-api.js';
+import fs from 'fs';
+
+// patch nodejs environment, we need to provide an implementation of
+// HTMLCanvasElement and HTMLImageElement
+const { Canvas, Image, ImageData, loadImage } = nodeCanvas;
+const canvas = new Canvas();
+faceapi.env.monkeyPatch({ Canvas, Image, ImageData })
+
+// Fake DB
+const db = [];
+
 
 // create server
 const app = express();
@@ -32,7 +47,14 @@ const start = async () => {
 
         // connect to mongoDB with client mongoose
         await mongoose.connect('mongodb://localhost:27017');
-    
+        console.log('-- mongoose connect --');
+
+        // ЗАГРУЗКА МОДЕЛЕЙ распознавания и определения
+        await faceapi.nets.faceRecognitionNet.loadFromDisk('./mdls')
+        await faceapi.nets.faceLandmark68Net.loadFromDisk('./mdls')
+        await faceapi.nets.ssdMobilenetv1.loadFromDisk('./mdls')
+        console.log('MODELS UPLOAD')
+
         // set listen PORT
         app.listen(PORT, () => {
             console.log('server was started on ', PORT)

@@ -1,10 +1,13 @@
 import fileService from "../services/fileService.js";
 import User from "../models/User.js";
 import File from '../models/File.js';
+import Descriptor from '../models/Descriptor.js';
 import path from 'path';
 import config from 'config';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import * as faceapi from 'face-api.js';
+import * as nodeCanvas from 'canvas';
 
 class FileController {
 
@@ -108,8 +111,34 @@ class FileController {
             })
 
             await dbFile.save();
+            console.log("файл сохранен")
             await user.save();
+            console.log("Информация о пользователе обновлена")
 
+            
+
+            // create descriptor
+
+            if(type === 'jpg') {
+                let image = await nodeCanvas.loadImage(`./${path}`);
+                console.log(`image | ./${path} LOADED.`);
+                const desc = await faceapi.detectSingleFace(image).withFaceLandmarks().withFaceDescriptor();
+                console.log(`image | ./${path} DETECTED.`);
+                const descriptor = new Descriptor({path, desc});
+                // await descriptor.save();
+            }
+           
+            
+            
+            
+            // db.push({
+            // path: `./store/${path}`,
+            // desc: result,
+            // });
+            // console.log(`image | ./store/${path} add to DB.`);
+
+            // const findedDesc = Descriptor.findOne()
+            
             res.json(dbFile);
         } catch(e) {
             console.log(e)
