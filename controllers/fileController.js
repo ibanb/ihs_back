@@ -8,6 +8,9 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import * as faceapi from 'face-api.js';
 import * as nodeCanvas from 'canvas';
+import ImageDataURI from 'image-data-uri'
+import jimp from 'jimp';
+import { MongoClient, UnorderedBulkOperation } from "mongodb";
 
 class FileController {
 
@@ -33,6 +36,23 @@ class FileController {
             return res.status(400).json(e)
         }
     }
+
+    // СЛЕДУЮЩИЙ ШАГ = ПОЛУЧИТЬ МАССИВ ДЕСКРИПТОРОВ ИЗ БАЗЫ ДАННЫХ
+    async getDescriptors(req, res) {
+        
+        try {
+
+            console.log('we are in back')
+            // const descriptors = Descriptor.
+            const test = 'TEST DATA'
+            return res.json(test)
+
+        } catch(e) {
+            console.log(e)
+            return res.status(500).json({message: "Can not get DESCRIPTORS"})
+
+        }
+    }
     
     async getFiles(req, res) {
         try {
@@ -56,12 +76,98 @@ class FileController {
                     break;
             }
 
-            console.log(files);
+            
             return res.json(files)
         } catch (e) {
             console.log(e)
             return res.status(500).json({message: "Can not get files"})
         }
+    }
+
+    async uploadSelfy(req, res) {
+
+        // const image = fs.readFileSync('controllers/results/data.png')
+        // const buffer = Buffer.from(image, "base64");
+        // return res.json({buffer})
+
+        // return res
+        //     .set('Content-Type', 'image/png')
+        //     .send(image);
+
+       
+       
+        Promise.resolve(req)
+            .then((req) => {
+                console.log('1 step - Get URI');
+                return req.body.image;
+            })
+            .then((uri) => {
+                console.log('2 step - URI convert')
+                
+                const string = uri;
+                const regex = /^data:.+\/(.+);base64,(.*)$/;
+
+                const matches = string.match(regex);
+                const ext = matches[1];
+                const data = matches[2];
+                const buffer = Buffer.from(data, 'base64');
+                const path = 'controllers/results/data.' + ext
+                fs.writeFileSync(path, buffer);
+                return path
+            })
+            .then(async (path) => {
+                console.log('3 step - load image')
+                const image = await nodeCanvas.loadImage(path);
+                return image;
+            })
+            .then(async (img) => {
+                console.log('4 step - image detections')
+                const targetDetections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+                
+                const labeledTarget = new faceapi.LabeledFaceDescriptors('Target selfy', [targetDetections.descriptor])
+                const faceMatcher = new faceapi.FaceMatcher(labeledTarget, 0.6)
+                return faceMatcher
+            })
+            .then(async (fm) => {
+                console.log('I am in faceMatcher STEP - all rigth');
+               
+
+                const descriptors = await Descriptor.find({})
+                const handleDesc = descriptors
+                    .map(item => {
+                        const path = item.path
+                        const d = item.desc
+                        return {path, descriptor: d}
+                    })
+                    .filter(item => {
+                    return Object.entries(item.descriptor).length !== 0
+                    })
+                    .map(item => {
+                        return {path: item.path, desc: Object.values(item.descriptor.descriptor) }
+                    })
+
+                
+
+
+                return handleDesc.map(({path, desc}) => {
+                    return {
+                        path,
+                        result: fm.findBestMatch(desc).toString().trim(),
+                    }
+                    })
+                    .filter(el => el.result.split(' ')[0] !== 'unknown');
+            })
+            .then(finalRES => {
+                console.log('FINAL step - SEND to FRONT')
+                console.log('==============')
+                console.log(finalRES)
+
+                return res.json({message: finalRES})
+            })
+                
+    
+            
+
     }
 
     async uploadFile(req, res) {
@@ -125,7 +231,7 @@ class FileController {
                 const desc = await faceapi.detectSingleFace(image).withFaceLandmarks().withFaceDescriptor();
                 console.log(`image | ./${path} DETECTED.`);
                 const descriptor = new Descriptor({path, desc});
-                // await descriptor.save();
+                await descriptor.save();
             }
            
             
@@ -167,6 +273,8 @@ class FileController {
             res.status(500).json({message: 'Download error!'})
         }
     }
+
+    
 
     async deleteFile(req, res) {
         try {

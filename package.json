@@ -21,7 +21,10 @@
     "express-fileupload": "^1.4.1",
     "express-validator": "^7.0.1",
     "face-api.js": "^0.22.2",
+    "image-data-uri": "^2.0.1",
+    "jimp": "^0.22.10",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.1.0",
     "mongoose": "^7.5.2",
     "react-transition-group": "^4.4.5",
     "uuid": "^9.0.1"
