@@ -132,6 +132,7 @@ class FileController {
                 console.log('I am in faceMatcher STEP - all rigth');
                
 
+                // GET descriptors from File (mongodb search)
                 const descriptors = await Descriptor.find({})
                 const handleDesc = descriptors
                     .map(item => {
@@ -148,7 +149,7 @@ class FileController {
 
                 
 
-
+                // SEE!!! on LIST on your table
                 return handleDesc.map(({path, desc}) => {
                     return {
                         path,
@@ -162,11 +163,34 @@ class FileController {
                 console.log('==============')
                 console.log(finalRES)
 
+                // FINAL filter results and delete copy descriptors of array
                 return res.json({message: finalRES})
             })
                 
     
             
+
+    }
+
+    async uploadBonus(req, res) {
+        console.log('test bonus route')
+        // console.log(req.files.test.data);
+        res.json({message: 'test bonus route'});
+        const buffer = Buffer.from(req.files.test.data, 'base64');
+        fs.writeFileSync('controllers/results/result.png', buffer);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }
 
@@ -216,6 +240,7 @@ class FileController {
 
             })
 
+            // Перенести всё это после распознавания и сохранить все дескрипторы в сущность ФАЙЛ
             await dbFile.save();
             console.log("файл сохранен")
             await user.save();
@@ -225,27 +250,21 @@ class FileController {
 
             // create descriptor
 
+            // [image formats].includes(type)
             if(type === 'jpg') {
                 let image = await nodeCanvas.loadImage(`./${path}`);
                 console.log(`image | ./${path} LOADED.`);
+
+
+                // TRY CATCH if unrecognized
                 const desc = await faceapi.detectSingleFace(image).withFaceLandmarks().withFaceDescriptor();
                 console.log(`image | ./${path} DETECTED.`);
                 const descriptor = new Descriptor({path, desc});
                 await descriptor.save();
             }
-           
-            
-            
-            
-            // db.push({
-            // path: `./store/${path}`,
-            // desc: result,
-            // });
-            // console.log(`image | ./store/${path} add to DB.`);
-
-            // const findedDesc = Descriptor.findOne()
             
             res.json(dbFile);
+
         } catch(e) {
             console.log(e)
             return res.status(500).json({message: "Upload error!"})

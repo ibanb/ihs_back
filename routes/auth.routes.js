@@ -85,7 +85,7 @@ router.post('/login',
             }
 
             // create token by secret key
-            const token = jsonwebtoken.sign({id: user.id}, config.get('secretKEY'), {expiresIn: '1h'});
+            const token = jsonwebtoken.sign({id: user.id}, config.get('secretKEY'), {expiresIn: '10h'});
             return res.json({
                 token,
                 user: {

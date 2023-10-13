@@ -7,7 +7,8 @@ const fileRouter = new Router();
 
 fileRouter.post('', authMiddleware, fileController.createDir);
 fileRouter.post('/upload', authMiddleware, fileController.uploadFile);
-fileRouter.post('/selfy', authMiddleware, fileController.uploadSelfy)
+fileRouter.post('/selfy', authMiddleware, fileController.uploadSelfy);
+fileRouter.post('/bonus', authMiddleware, fileController.uploadBonus);
 fileRouter.post('/avatar', authMiddleware, fileController.uploadAvatar);
 
 fileRouter.get('/download', authMiddleware, fileController.downloadFile);
